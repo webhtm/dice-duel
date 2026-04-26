@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Dice Duel</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Trebuchet Ms;
+            background: #20242d;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            color: #e0e0e0;
+        }
+
+        .game-wrapper {
+            width: 100%;
+            max-width: 420px;
+            background: #282d39;
+            border-radius: 32px;
+            padding: 24px 20px 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .view {
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .view.active {
+            display: flex;
+        }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background 0.2s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e0e0e0;
+        }
+
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .icon-btn:active {
+            transform: scale(0.92);
+        }
+
+        .balance-display {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: #e5b93c;
+            background: #353b48;
+            padding: 6px 18px;
+            border-radius: 40px;
+        }
+
+        .streak-badge {
+            background: rEd;
+            color: white;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .dice-area {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin: 15px 0;
+        }
+
+        .dice-svg {
+            width: 90px;
+            height: 90px;
+            filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.3));
+            transition: transform 0.1s;
+        }
+
+        .dice-svg.rolling {
+            animation: shake 0.08s infinite linear;
+        }
+
+        @keyframes shake {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(5deg); }
+            50% { transform: rotate(-5deg); }
+            75% { transform: rotate(3deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        .bet-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .bet-amount {
+            font-size: 2rem;
+            font-weight: bold;
+            min-width: 60px;
+            text-align: center;
+            color: #e5b93c;
+            background: #353b48;
+            border-radius: 16px;
+            padding: 6px 12px;
+            letter-spacing: 1px;
+        }
+
+        .bet-btn-icon {
+            width: 44px;
+            height: 44px;
+            padding: 2px;
+            background: #353b48;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            color: #e0e0e0;
+            transition:0.2s ease;
+        }
+.bet-btn-icon:hover, #quickAddBtn:hover {
+    background: #73663B;
+    outline : 2px solid yellow;
+}
+        .cards-grid {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .card-btn {
+            background: #323743;
+            border: 2px solid #4a4f5c;
+            border-radius: 20px;
+            padding: 16px 12px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            min-width: 90px;
+            flex: 1;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #d0d0d0;
+            font-weight: 600;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-btn:hover {
+            border-color: #e5b93c;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 18px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-btn:active {
+            transform: translateY(0px);
+        }
+
+        .card-btn .range {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .card-btn .label {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .risk-btn {
+            background: linear-gradient(145deg, #b83b3b, #d64b4b);
+            border: none;
+            color: white;
+            font-weight: bold;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 6px 14px rgba(182, 67, 67, 0.4);
+            transition: transform 0.1s;
+        }
+
+        .risk-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        .menu-title {
+            text-align: center;
+            font-size: 2.4rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: #e5b93c;
+        }
+
+        .difficulty-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .diff-btn {
+            background: #353b48;
+            border: 2px solid #353b48;
+            border-radius: 24px;
+            padding: 16px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            
+        }
+.diff-btn:active {
+    transition:ease 0.3s;
+}
+
+        .diff-btn:hover {
+            background: #46505e;
+            border-color: #e5b93c;
+        }
+
+        .high-score-section {
+            background: #232833;
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .hs-list {
+            list-style: none;
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .hs-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #3a404c;
+            font-size: 0.95rem;
+        }
+
+        .result-message {
+            text-align: center;
+            font-size: 1.3rem;
+            min-height: 40px;
+            font-weight: bold;
+            color: #e0e0e0;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .view-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-align: center;
+            color: #e5b93c;
+            margin-bottom: 10px;
+        }
+        button {
+            font-family:Trebuchet Ms;
+        }
+        
+    </style>
+</head>
+<body>
+<div class="game-wrapper">
+    <!-- ========== MAIN MENU VIEW ========== -->
+    <div id="menuView" class="view active">
+        <div class="menu-title">Dice Duel</div>
+        <div class="difficulty-grid">
+            <button class="diff-btn" data-diff="easy">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                Easy
+            </button>
+            <button class="diff-btn" data-diff="medium">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                Medium
+            </button>
+            <button class="diff-btn" data-diff="hard">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                Hard
+            </button>
+            <button id="highScoresMenuBtn" class="diff-btn">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+                Scores
+            </button>
+        </div>
+    </div>
+
+    <!-- ========== GAME VIEW ========== -->
+    <div id="gameView" class="view">
+        <div class="top-bar">
+            <button id="homeBtn" class="icon-btn" title="Main menu">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#e5b93c" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </button>
+            <div class="balance-display">
+                <span>Balance:</span> <span id="balanceDisplay">100</span>
+            </div>
+            <div class="streak-badge" id="streakDisplay">Wins: 0</div>
+        </div>
+
+        <div class="dice-area">
+            <div id="dice1" class="dice-svg"></div>
+            <div id="dice2" class="dice-svg"></div>
+        </div>
+
+        <div class="bet-container">
+            <button id="betDownBtn" class="bet-btn-icon" title="Decrease bet">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e5b93c" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <div class="bet-amount" id="betAmountDisplay">10</div>
+            <button id="betUpBtn" class="bet-btn-icon" title="Increase bet">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e5b93c" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <button id="quickAddBtn" class="bet-btn-icon" title="Quick +10" style="background:#4c5a6b;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+        </div>
+
+        <div class="cards-grid">
+            <button class="card-btn" data-bet="low">
+                <span class="label">Low</span>
+                <span class="range">(2-6)</span>
+            </button>
+            <button class="card-btn" data-bet="equal">
+                <span class="label">Equal</span>
+                <span class="range">(7)</span>
+            </button>
+            <button class="card-btn" data-bet="high">
+                <span class="label">High</span>
+                <span class="range">(8-12)</span>
+            </button>
+        </div>
+
+        <button id="riskItBtn" class="risk-btn">
+            RISK IT ALL (double or nothing)
+        </button>
+
+        <div class="result-message" id="resultMsg"></div>
+        <div style="text-align:center;">
+            <button id="playAgainBtn" style="display:none; background:#4a8c5c; border:none; color:white; padding:12px 30px; border-radius:30px; font-weight:bold; cursor:pointer;">Play Again</button>
+        </div>
+    </div>
+
+    <!-- ========== HIGH SCORES VIEW ========== -->
+    <div id="highScoresView" class="view">
+        <div class="top-bar">
+            <button id="highScoresHomeBtn" class="icon-btn" title="Main menu">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#e5b93c" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </button>
+            <div class="view-title">Scores</div>
+            <div style="width: 28px;"></div>
+        </div>
+        <div class="high-score-section">
+            <ul id="highScoresList" class="hs-list"></ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---------- SVG DICE GENERATOR ----------
+    function diceSVG(num) {
+        const pipPositions = {
+            1: [[50,50]],
+            2: [[25,25],[75,75]],
+            3: [[25,25],[50,50],[75,75]],
+            4: [[25,25],[75,25],[25,75],[75,75]],
+            5: [[25,25],[75,25],[50,50],[25,75],[75,75]],
+            6: [[25,25],[75,25],[25,50],[75,50],[25,75],[75,75]]
+        };
+        const pips = (pipPositions[num] || []).map(([x,y]) => 
+            `<circle cx="${x}" cy="${y}" r="10" fill="#222"/>`
+        ).join('');
+
+        return `<svg viewBox="0 0 100 100" width="100%" height="100%">
+            <rect x="4" y="4" width="92" height="92" rx="18" fill="#f0f0f0" stroke="#555" stroke-width="3"/>
+            ${pips}
+        </svg>`;
+    }
+
+    // ---------- STATE ----------
+    const DIFFICULTIES = {
+        easy: { startCoins: 150, target: 200, riskStreak: 2, name: 'Easy' },
+        medium: { startCoins: 100, target: 300, riskStreak: 3, name: 'Medium' },
+        hard: { startCoins: 50, target: 400, riskStreak: 4, name: 'Hard' }
+    };
+
+    let config = null;
+    let balance = 100;
+    let target = 200;
+    let streak = 0;
+    let riskStreakNeeded = 3;
+    let bet = 10;
+    let gameActive = false;
+    let gameOver = false;
+    let rolling = false;
+
+    const menuView = document.getElementById('menuView');
+    const gameView = document.getElementById('gameView');
+    const highScoresView = document.getElementById('highScoresView');
+    const highScoresList = document.getElementById('highScoresList');
+    const highScoresMenuBtn = document.getElementById('highScoresMenuBtn');
+    const highScoresHomeBtn = document.getElementById('highScoresHomeBtn');
+    const homeBtn = document.getElementById('homeBtn');
+    const balanceDisplay = document.getElementById('balanceDisplay');
+    const streakDisplay = document.getElementById('streakDisplay');
+    const dice1El = document.getElementById('dice1');
+    const dice2El = document.getElementById('dice2');
+    const betAmountDisplay = document.getElementById('betAmountDisplay');
+    const betDownBtn = document.getElementById('betDownBtn');
+    const betUpBtn = document.getElementById('betUpBtn');
+    const quickAddBtn = document.getElementById('quickAddBtn');
+    const riskItBtn = document.getElementById('riskItBtn');
+    const resultMsg = document.getElementById('resultMsg');
+    const playAgainBtn = document.getElementById('playAgainBtn');
+    const cardButtons = document.querySelectorAll('.card-btn');
+
+    function updateBalanceUI() {
+        balanceDisplay.textContent = balance;
+        streakDisplay.textContent = 'Streak: ' + streak;
+        if (balance >= target && gameActive) endGame('win');
+        if (balance <= 0 && gameActive) endGame('lose');
+        if (streak >= riskStreakNeeded && !gameOver && gameActive) {
+            riskItBtn.style.display = 'flex';
+        } else {
+            riskItBtn.style.display = 'none';
+        }
+    }
+
+    function setBet(newBet) {
+        if (gameOver || !gameActive || rolling) return;
+        newBet = Math.max(1, Math.min(newBet, balance));
+        bet = newBet;
+        betAmountDisplay.textContent = bet;
+    }
+
+    function animateDice(finalD1, finalD2, callback) {
+        rolling = true;
+        dice1El.classList.add('rolling');
+        dice2El.classList.add('rolling');
+        cardButtons.forEach(b => b.disabled = true);
+        riskItBtn.disabled = true;
+
+        let ticks = 0;
+        const totalTicks = 12;
+        const interval = setInterval(() => {
+            const rand1 = Math.floor(Math.random() * 6) + 1;
+            const rand2 = Math.floor(Math.random() * 6) + 1;
+            dice1El.innerHTML = diceSVG(rand1);
+            dice2El.innerHTML = diceSVG(rand2);
+            ticks++;
+            if (ticks >= totalTicks) {
+                clearInterval(interval);
+                dice1El.innerHTML = diceSVG(finalD1);
+                dice2El.innerHTML = diceSVG(finalD2);
+                dice1El.classList.remove('rolling');
+                dice2El.classList.remove('rolling');
+                rolling = false;
+                if (!gameOver) {
+                    cardButtons.forEach(b => b.disabled = false);
+                    riskItBtn.disabled = false;
+                }
+                callback();
+            }
+        }, 60);
+    }
+
+    function rollDice(callback) {
+        const d1 = Math.floor(Math.random() * 6) + 1;
+        const d2 = Math.floor(Math.random() * 6) + 1;
+        animateDice(d1, d2, () => {
+            callback({ d1, d2, sum: d1 + d2 });
+        });
+    }
+
+    function outcomeLabel(sum) {
+        if (sum <= 6) return 'low';
+        if (sum === 7) return 'equal';
+        return 'high';
+    }
+
+    function processBet(choice) {
+        if (!gameActive || gameOver || rolling) return;
+        if (bet > balance) bet = balance;
+        resultMsg.textContent = 'Rolling...';
+        rollDice(({ sum }) => {
+            const outcome = outcomeLabel(sum);
+            const won = (choice === outcome);
+            if (won) {
+                balance += bet;
+                streak++;
+                resultMsg.textContent = `Sum ${sum} (${outcome}). +${bet} coins!`;
+            } else {
+                balance -= bet;
+                streak = 0;
+                resultMsg.textContent = `Sum ${sum} (${outcome}). -${bet} coins.`;
+            }
+            if (bet > balance) bet = balance;
+            betAmountDisplay.textContent = bet;
+            updateBalanceUI();
+        });
+    }
+
+    function riskItAll() {
+        if (!gameActive || gameOver || streak < riskStreakNeeded || rolling) return;
+        const choice = prompt("Risk ALL coins on? (low/equal/high)").toLowerCase().trim();
+        if (!['low','equal','high'].includes(choice)) {
+            resultMsg.textContent = 'Invalid choice, risk cancelled.';
+            return;
+        }
+        resultMsg.textContent = 'Rolling...';
+        rollDice(({ sum }) => {
+            const outcome = outcomeLabel(sum);
+            if (choice === outcome) {
+                balance *= 2;
+                resultMsg.textContent = `DOUBLED! Sum ${sum}. Balance doubled to ${balance}!`;
+            } else {
+                balance = 0;
+                resultMsg.textContent = `LOST ALL! Sum ${sum}. You lost everything.`;
+            }
+            streak = 0;
+            bet = Math.min(bet, balance);
+            betAmountDisplay.textContent = bet;
+            updateBalanceUI();
+        });
+    }
+
+    function endGame(reason) {
+        gameActive = false;
+        gameOver = true;
+        riskItBtn.style.display = 'none';
+        playAgainBtn.style.display = 'inline-block';
+        cardButtons.forEach(b => b.disabled = true);
+        if (reason === 'win') {
+            resultMsg.textContent = `You reached ${target} coins! Victory!`;
+            saveHighScore(balance);
+        } else if (reason === 'lose') {
+            resultMsg.textContent = 'You ran out of coins. Game over.';
+            saveHighScore(0);
+        }
+    }
+
+    function startGame(diffKey) {
+        config = DIFFICULTIES[diffKey];
+        balance = config.startCoins;
+        target = config.target;
+        riskStreakNeeded = config.riskStreak;
+        streak = 0;
+        bet = 10;
+        gameActive = true;
+        gameOver = false;
+        rolling = false;
+        playAgainBtn.style.display = 'none';
+        resultMsg.textContent = '';
+        cardButtons.forEach(b => b.disabled = false);
+        riskItBtn.disabled = false;
+        betAmountDisplay.textContent = bet;
+        dice1El.innerHTML = diceSVG(1);
+        dice2El.innerHTML = diceSVG(1);
+        dice1El.classList.remove('rolling');
+        dice2El.classList.remove('rolling');
+        updateBalanceUI();
+        switchView('game');
+    }
+
+    function switchView(view) {
+        menuView.classList.remove('active');
+        gameView.classList.remove('active');
+        highScoresView.classList.remove('active');
+        if (view === 'menu') {
+            menuView.classList.add('active');
+            gameActive = false;
+            gameOver = false;
+        } else if (view === 'game') {
+            gameView.classList.add('active');
+        } else if (view === 'highScores') {
+            highScoresView.classList.add('active');
+            renderHighScores();
+        }
+    }
+
+    function loadHighScores() {
+        const raw = localStorage.getItem('diceDuelHighScores');
+        return raw ? JSON.parse(raw) : [];
+    }
+
+    function saveHighScore(score) {
+        const scores = loadHighScores();
+        scores.push({
+            difficulty: config.name,
+            score: score,
+            date: new Date().toLocaleDateString()
+        });
+        scores.sort((a,b) => b.score - a.score);
+        localStorage.setItem('diceDuelHighScores', JSON.stringify(scores.slice(0,10)));
+    }
+
+    function renderHighScores() {
+        const scores = loadHighScores();
+        highScoresList.innerHTML = '';
+        if (scores.length === 0) {
+            highScoresList.innerHTML = '<li>No high scores yet.</li>';
+            return;
+        }
+        scores.forEach(s => {
+            const li = document.createElement('li');
+            li.innerHTML = `<span>${s.difficulty} - ${s.score} coins</span><span>${s.date}</span>`;
+            highScoresList.appendChild(li);
+        });
+    }
+
+    // Event listeners
+    document.querySelectorAll('.diff-btn[data-diff]').forEach(btn => {
+        btn.addEventListener('click', () => startGame(btn.dataset.diff));
+    });
+
+    highScoresMenuBtn.addEventListener('click', () => switchView('highScores'));
+    highScoresHomeBtn.addEventListener('click', () => switchView('menu'));
+    homeBtn.addEventListener('click', () => { gameActive = false; gameOver = false; switchView('menu'); });
+
+    betDownBtn.addEventListener('click', () => setBet(bet - 5));
+    betUpBtn.addEventListener('click', () => setBet(bet + 5));
+    quickAddBtn.addEventListener('click', () => setBet(bet + 10));
+
+    cardButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (!gameActive || gameOver || rolling) return;
+            processBet(btn.dataset.bet);
+        });
+    });
+
+    riskItBtn.addEventListener('click', riskItAll);
+    playAgainBtn.addEventListener('click', () => {
+        if (config) startGame(Object.keys(DIFFICULTIES).find(k => DIFFICULTIES[k] === config));
+    });
+
+    dice1El.innerHTML = diceSVG(1);
+    dice2El.innerHTML = diceSVG(1);
+    updateBalanceUI();
+</script>
+</body>
+</html>
